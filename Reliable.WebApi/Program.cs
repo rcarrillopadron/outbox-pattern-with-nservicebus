@@ -3,6 +3,7 @@ using NServiceBus;
 using Reliable.Domain;
 using Reliable.Messages.Commands;
 using System.Diagnostics;
+using Reliable.Messages.Events;
 
 namespace Reliable.WebApi;
 
@@ -21,19 +22,25 @@ public class Program
                 // for use by all endpoints in the system
 
                 // TODO: give the endpoint an appropriate name
-                var endpointConfiguration = new EndpointConfiguration("Reliable.WebApi");
+                var endpointConfiguration = new EndpointConfiguration("Inventory");
 
                 // TODO: ensure the most appropriate serializer is chosen
                 // https://docs.particular.net/nservicebus/serialization/
                 endpointConfiguration.UseSerialization<NewtonsoftJsonSerializer>();
                 endpointConfiguration.DefineCriticalErrorAction(OnCriticalError);
 
+                endpointConfiguration.Conventions()
+                    .DefiningCommandsAs(t => t == typeof(IncreaseInventory) || t == typeof(DecreaseInventory))
+                    .DefiningEventsAs(t => t == typeof(InventoryUpdated));
+
                 // TODO: remove this condition after choosing a transport, persistence and deployment method suitable for production
                 if (Environment.UserInteractive && Debugger.IsAttached)
                 {
                     // TODO: choose a durable transport for production
                     // https://docs.particular.net/transports/
-                    var transportExtensions = endpointConfiguration.UseTransport<LearningTransport>();
+                    var transport = endpointConfiguration.UseTransport<RabbitMQTransport>();
+                    transport.UseConventionalRoutingTopology(QueueType.Quorum);
+                    transport.ConnectionString("host=localhost");
 
                     // TODO: choose a durable persistence for production
                     // https://docs.particular.net/persistence/
@@ -83,18 +90,17 @@ public class Program
             ([FromServices] Inventory inventory) => inventory.ToList()
         );
 
-        app.MapPut("/inventory", 
-            ([FromServices] Inventory inventory, ProductQuantity item) =>
+        app.MapPut("/inventory", async ([FromServices] Inventory inventory, [FromServices] IMessageSession messageSession, ProductQuantity item, CancellationToken cancellationToken) =>
             {
                 var currentItem = inventory.GetItem(item.ProductId);
                 if (currentItem is not null)
                 {
                     if (currentItem.Quantity < item.Quantity)
                     {
-                        new IncreaseInventory(item.ProductId, item.Quantity - currentItem.Quantity);
+                        await messageSession.SendLocal(new IncreaseInventory(item.ProductId, item.Quantity - currentItem.Quantity), cancellationToken);
                     } else if (currentItem.Quantity > item.Quantity)
                     {
-                        new DecreaseInventory(item.ProductId, currentItem.Quantity - item.Quantity);
+                        await messageSession.SendLocal(new DecreaseInventory(item.ProductId, currentItem.Quantity - item.Quantity), cancellationToken);
                     }
                     inventory.Update(item);
                     return Results.Accepted();
@@ -120,7 +126,7 @@ public class Program
         }
     }
 
-    static void FailFast(string message, Exception exception)
+    private static void FailFast(string message, Exception exception)
     {
         try
         {
