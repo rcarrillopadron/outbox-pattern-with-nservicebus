@@ -9,6 +9,7 @@ public class Inventory : IEnumerable<ProductQuantity>
     
     public void Update(ProductQuantity item)
     {
+        if (item == null) throw new ArgumentNullException(nameof(item));
         ProductQuantity? currentItem = this.SingleOrDefault(x => x.ProductId == item.ProductId);
 
         if (currentItem != null)

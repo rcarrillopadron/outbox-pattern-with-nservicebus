@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Mvc;
 using NServiceBus;
 using Reliable.Domain;
 using Reliable.Messages.Commands;
@@ -11,6 +10,8 @@ public class Program
 {
     public static void Main(string[] args)
     {
+        Console.BackgroundColor = ConsoleColor.Yellow;
+        Console.ForegroundColor = ConsoleColor.Black;
         var builder = WebApplication.CreateBuilder(args);
 
         builder.Host
@@ -51,20 +52,11 @@ public class Program
                 }
 
                 // TODO: replace the license.xml file with your license file
-
                 return endpointConfiguration;
-            })
-            ;
+            });
 
-        // Add services to the container.
-        builder.Services.AddAuthorization();
-
-        // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-        builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGen();
-
-        builder.Services.AddSingleton<Inventory>();
-
+        RegisterServices(builder.Services);
+        
         var app = builder.Build();
 
         // Configure the HTTP request pipeline.
@@ -78,38 +70,25 @@ public class Program
 
         app.UseAuthorization();
 
-        app.MapGet("/inventory/{productId}",
-                ([FromServices] Inventory inventory, int productId) =>
-                {
-                    var item = inventory.GetItem(productId);
-                    return item is not null ? Results.Ok(item) : Results.NotFound();
-                })
-            .WithName("GetInventory");
-
-        app.MapGet("/inventory",
-            ([FromServices] Inventory inventory) => inventory.ToList()
+        var api = new InventoryApi(
+            app.Services.GetRequiredService<ILogger<InventoryApi>>(),
+            app.Services.GetRequiredService<IMessageSession>(),
+            app.Services.GetRequiredService<Inventory>()
         );
-
-        app.MapPut("/inventory", async ([FromServices] Inventory inventory, [FromServices] IMessageSession messageSession, ProductQuantity item, CancellationToken cancellationToken) =>
-            {
-                var currentItem = inventory.GetItem(item.ProductId);
-                if (currentItem is not null)
-                {
-                    if (currentItem.Quantity < item.Quantity)
-                    {
-                        await messageSession.SendLocal(new IncreaseInventory(item.ProductId, item.Quantity - currentItem.Quantity), cancellationToken);
-                    } else if (currentItem.Quantity > item.Quantity)
-                    {
-                        await messageSession.SendLocal(new DecreaseInventory(item.ProductId, currentItem.Quantity - item.Quantity), cancellationToken);
-                    }
-                    inventory.Update(item);
-                    return Results.Accepted();
-                }
-
-                return Results.NotFound(item);
-            })
-            .WithName("UpdateInventory");
+        api.Register(app);
         app.Run();
+    }
+
+    private static void RegisterServices(IServiceCollection services)
+    {
+        // Add services to the container.
+        services.AddAuthorization();
+
+        // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+        services.AddEndpointsApiExplorer();
+        services.AddSwaggerGen();
+
+        services.AddSingleton<Inventory>();
     }
 
     private static async Task OnCriticalError(ICriticalErrorContext context, CancellationToken cancellationToken)

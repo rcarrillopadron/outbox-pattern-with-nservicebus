@@ -2,6 +2,5 @@
 
 public class InventoryUpdated
 {
-    public int ProductId { get; set; }
-    public int Quantity { get; set; }
+    public Dictionary<int, int> Items { get; set; } = new Dictionary<int, int>();
 }

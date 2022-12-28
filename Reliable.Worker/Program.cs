@@ -2,6 +2,7 @@ using NServiceBus;
 using Reliable.Messages.Commands;
 using Reliable.Messages.Events;
 using System.Diagnostics;
+using Reliable.Domain;
 
 namespace Reliable.Worker
 {
@@ -9,9 +10,12 @@ namespace Reliable.Worker
     {
         public static void Main(string[] args)
         {
+            Console.BackgroundColor = ConsoleColor.DarkBlue;
+            Console.ForegroundColor = ConsoleColor.White;
             IHost host = Host.CreateDefaultBuilder(args)
                 .ConfigureServices(services =>
                 {
+                    services.AddSingleton<Inventory>();
                     services.AddHostedService<Worker>();
                 })
                 .UseConsoleLifetime()
@@ -55,7 +59,6 @@ namespace Reliable.Worker
                     return endpointConfiguration;
                 })
                 .Build();
-
             host.Run();
         }
 
