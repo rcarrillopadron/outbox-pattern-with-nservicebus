@@ -3,6 +3,8 @@ using Reliable.Messages.Commands;
 using Reliable.Messages.Events;
 using System.Diagnostics;
 using Reliable.Domain;
+using Serilog;
+using Serilog.Events;
 
 namespace Reliable.Worker
 {
@@ -10,6 +12,12 @@ namespace Reliable.Worker
     {
         public static void Main(string[] args)
         {
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+                .Enrich.FromLogContext()
+                .WriteTo.Console()
+                .CreateBootstrapLogger();
+
             IHost host = Host.CreateDefaultBuilder(args)
                 .ConfigureServices(services =>
                 {
@@ -21,8 +29,13 @@ namespace Reliable.Worker
                     });
                     services.AddHostedService<Worker>();
                 })
+                .UseSerilog((context, services, configuration) => configuration
+                    .ReadFrom.Configuration(context.Configuration)
+                    .ReadFrom.Services(services)
+                    .Enrich.FromLogContext()
+                    .WriteTo.Console())
+                .ConfigureLogging(logger => logger.AddConsole())
                 .UseConsoleLifetime()
-                .ConfigureLogging(logging => logging.AddConsole())
                 .UseNServiceBus(ctx =>
                 {
                     // TODO: consider moving common endpoint configuration into a shared project

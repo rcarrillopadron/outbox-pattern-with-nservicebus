@@ -3,6 +3,8 @@ using Reliable.Domain;
 using Reliable.Messages.Commands;
 using System.Diagnostics;
 using Reliable.Messages.Events;
+using Serilog;
+using Serilog.Events;
 
 namespace Reliable.WebApi;
 
@@ -10,11 +12,23 @@ public class Program
 {
     public static void Main(string[] args)
     {
+        Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+            .Enrich
+            .FromLogContext()
+            .WriteTo.Console()
+            .CreateBootstrapLogger();
+
         var builder = WebApplication.CreateBuilder(args);
 
         builder.Host
             .UseConsoleLifetime()
-            .ConfigureLogging(logging => logging.AddConsole())
+            .UseSerilog((context, services, configuration) => configuration
+                .ReadFrom.Configuration(context.Configuration)
+                .ReadFrom.Services(services)
+                .Enrich.FromLogContext()
+                .WriteTo.Console())
+            .ConfigureLogging(logger => logger.AddConsole())
             .UseNServiceBus(ctx =>
             {
                 // TODO: consider moving common endpoint configuration into a shared project
@@ -65,9 +79,7 @@ public class Program
         }
 
         app.UseHttpsRedirection();
-
-        app.UseAuthorization();
-
+        
         var api = new InventoryApi(
             app.Services.GetRequiredService<ILogger<InventoryApi>>(),
             app.Services.GetRequiredService<IMessageSession>(),
@@ -79,9 +91,6 @@ public class Program
 
     private static void RegisterServices(IServiceCollection services)
     {
-        // Add services to the container.
-        services.AddAuthorization();
-
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();

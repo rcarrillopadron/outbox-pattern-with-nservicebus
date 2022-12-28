@@ -19,7 +19,7 @@ namespace Reliable.Worker
             while (!cancellationToken.IsCancellationRequested)
             {
                 _logger.LogInformation(_inventory.ToString());
-                await Task.Delay(10000, cancellationToken);
+                await Task.Delay(4000, cancellationToken);
             }
         }
     }

@@ -64,11 +64,9 @@ public class InventoryApi
                 _logger.LogInformation("There was no change in quantities");
                 return Results.Conflict($"Inventory was not incremented or decremented for {item.ProductId}");
             }
-
-            _inventory.Update(item);
-            return Results.Accepted($"/inventory/{item.ProductId}", item);
         }
 
-        return Results.NotFound(item);
+        _inventory.Update(item);
+        return Results.Accepted($"/inventory/{item.ProductId}", item);
     }
 }
