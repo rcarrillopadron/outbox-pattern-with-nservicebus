@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Mvc;
 using NServiceBus;
 using Reliable.Domain;
 using Reliable.Messages.Commands;
@@ -25,23 +24,23 @@ public class InventoryApi
         app.MapPut("/inventory", Put).WithName("UpdateInventory");
     }
 
-    async Task<IResult> Get(int productId)
+    Task<IResult> Get(int productId)
     {
         _logger.LogInformation("Getting ProductId {0}", productId);
         var item = _inventory.GetItem(productId);
         if (item is not null)
-            return Results.Ok(item);
+            return Task.FromResult(Results.Ok(item));
         
-        return Results.NotFound();
+        return Task.FromResult(Results.NotFound());
     }
 
-    async Task<IResult> GetAll()
+    private Task<IResult> GetAll()
     {
         _logger.LogInformation("Getting all products");
-        return Results.Ok(_inventory.ToList());
+        return Task.FromResult(Results.Ok(_inventory.ToList()));
     }
 
-    async Task<IResult> Put(ProductQuantity item, CancellationToken cancellationToken)
+    private async Task<IResult> Put(ProductQuantity item, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Updating productId {0} with {1} items", item.ProductId, item.Quantity);
         var currentItem = _inventory.GetItem(item.ProductId);

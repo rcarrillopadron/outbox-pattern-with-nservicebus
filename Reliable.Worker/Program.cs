@@ -13,7 +13,7 @@ Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
     .CreateBootstrapLogger();
 
-IHost host = Host.CreateDefaultBuilder(args)
+await Host.CreateDefaultBuilder(args)
     .ConfigureServices(services =>
     {
         services.AddSingleton<Inventory>(_ =>
@@ -69,8 +69,8 @@ IHost host = Host.CreateDefaultBuilder(args)
 
         return endpointConfiguration;
     })
-    .Build();
-host.Run();
+    .Build()
+    .RunAsync();
 
 static async Task OnCriticalError(ICriticalErrorContext context, CancellationToken cancellationToken)
 {
