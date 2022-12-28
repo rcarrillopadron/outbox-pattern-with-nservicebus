@@ -22,7 +22,7 @@ builder.Host
         .Enrich.FromLogContext()
         .WriteTo.Console())
     .ConfigureLogging(logger => logger.AddConsole())
-    .AddNServiceBusForWebApi()
+    .AddInventoryEndPoint()
     ;
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

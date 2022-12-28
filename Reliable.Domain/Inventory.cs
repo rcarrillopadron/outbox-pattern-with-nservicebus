@@ -22,7 +22,7 @@ public class Inventory : IEnumerable<ProductQuantity>
 
     public ProductQuantity? GetItem(int productId) => _sortedSet.SingleOrDefault(x => x.ProductId == productId);
 
-    public void GenerateRandomItems(int count = 10)
+    public void AddRandomItems(int count = 10)
     {
         int id = 1;
         var items = new Faker<ProductQuantity>()
@@ -31,7 +31,6 @@ public class Inventory : IEnumerable<ProductQuantity>
         items.ForEach(item => _sortedSet.Add(item));
     }
     
-
     public IEnumerator<ProductQuantity> GetEnumerator() => _sortedSet.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => _sortedSet.GetEnumerator();
@@ -39,23 +38,22 @@ public class Inventory : IEnumerable<ProductQuantity>
     public override string ToString()
     {
         var sb = new StringBuilder();
-        sb.AppendLine();
+        sb.AppendLine("|------------|----------|");
         sb.AppendLine("| Product Id | Quantity |");
-        _sortedSet.ToList().ForEach(item => sb.AppendLine($"| {item.ProductId,10:D} | {item.Quantity,8:D} |"));
+        sb.AppendLine("|------------|----------|");
+        var items = _sortedSet.ToList();
+
+        if (items.Any())
+        {
+            items.ForEach(item => sb.AppendLine($"| {item.ProductId,10:D} | {item.Quantity,8:D} |"));
+            sb.AppendLine("|------------|----------|"); 
+        }
+        else
+            sb.AppendLine("|            |          |");
+
+        sb.AppendLine($"|      Count | {_sortedSet.Count,8:D} |");
+        sb.AppendLine("|-----------------------|");
         sb.AppendLine();
         return sb.ToString();
-    }
-}
-
-internal class InventoryComparer : IComparer<ProductQuantity>
-{
-    public int Compare(ProductQuantity x, ProductQuantity y)
-    {
-        if (ReferenceEquals(x, y)) return 0;
-        if (ReferenceEquals(null, y)) return 1;
-        if (ReferenceEquals(null, x)) return -1;
-        var productIdComparison = x.ProductId.CompareTo(y.ProductId);
-        if (productIdComparison != 0) return productIdComparison;
-        return x.Quantity.CompareTo(y.Quantity);
     }
 }

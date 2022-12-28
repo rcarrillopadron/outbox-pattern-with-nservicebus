@@ -6,8 +6,7 @@ namespace Reliable.Worker
     {
         private readonly ILogger<Worker> _logger;
         private readonly Inventory _inventory;
-
-
+        
         public Worker(ILogger<Worker> logger, Inventory inventory)
         {
             _logger = logger;
@@ -18,7 +17,7 @@ namespace Reliable.Worker
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                _logger.LogInformation(_inventory.ToString());
+                _logger.LogInformation($"Current inventory{Environment.NewLine}{_inventory}");
                 await Task.Delay(4000, cancellationToken);
             }
         }

@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Reliable.Core.DI\Reliable.Core.DI.csproj" />
     <ProjectReference Include="..\Reliable.Domain\Reliable.Domain.csproj" />
     <ProjectReference Include="..\Reliable.Messages\Reliable.Messages.csproj" />
   </ItemGroup>

@@ -1,21 +1,13 @@
-﻿using System.Diagnostics;
-using Microsoft.Extensions.Hosting;
+﻿using Microsoft.Extensions.Hosting;
 using NServiceBus;
-using Reliable.Messages.Commands;
-using Reliable.Messages.Events;
 
 namespace Reliable.Core.DI
 {
     public static class NServiceBusExtension
     {
-        public static IHostBuilder AddNServiceBusForWebApi(this IHostBuilder hostBuilder)
-        {
-            return hostBuilder.UseNServiceBus(ctx =>
+        public static IHostBuilder AddInventoryEndPoint(this IHostBuilder hostBuilder) =>
+            hostBuilder.UseNServiceBus(ctx =>
             {
-                // TODO: consider moving common endpoint configuration into a shared project
-                // for use by all endpoints in the system
-
-                // TODO: give the endpoint an appropriate name
                 var endpointConfiguration = new EndpointConfiguration("Inventory");
 
                 // TODO: ensure the most appropriate serializer is chosen
@@ -24,32 +16,27 @@ namespace Reliable.Core.DI
                 endpointConfiguration.DefineCriticalErrorAction(OnCriticalError);
 
                 endpointConfiguration.Conventions()
-                    .DefiningCommandsAs(t => t == typeof(IncreaseInventory) || t == typeof(DecreaseInventory))
-                    .DefiningEventsAs(t => t == typeof(InventoryUpdated));
+                    .DefiningCommandsAs(t => t.Namespace != null && t.Namespace.EndsWith("Commands"))
+                    .DefiningEventsAs(t => t.Namespace != null && t.Namespace.EndsWith("Events"));
 
-                // TODO: remove this condition after choosing a transport, persistence and deployment method suitable for production
-                if (Environment.UserInteractive && Debugger.IsAttached)
-                {
-                    // TODO: choose a durable transport for production
-                    // https://docs.particular.net/transports/
-                    var transport = endpointConfiguration.UseTransport<RabbitMQTransport>();
-                    transport.UseConventionalRoutingTopology(QueueType.Quorum);
-                    transport.ConnectionString("host=localhost");
+                // TODO: choose a durable transport for production
+                // https://docs.particular.net/transports/
+                var transport = endpointConfiguration.UseTransport<RabbitMQTransport>();
+                transport.UseConventionalRoutingTopology(QueueType.Quorum);
+                transport.ConnectionString("host=localhost");
 
-                    // TODO: choose a durable persistence for production
-                    // https://docs.particular.net/persistence/
-                    endpointConfiguration.UsePersistence<LearningPersistence>();
+                // TODO: choose a durable persistence for production
+                // https://docs.particular.net/persistence/
+                endpointConfiguration.UsePersistence<LearningPersistence>();
 
-                    // TODO: create a script for deployment to production
-                    endpointConfiguration.EnableInstallers();
-                }
+                // TODO: create a script for deployment to production
+                endpointConfiguration.EnableInstallers();
 
                 // TODO: replace the license.xml file with your license file
                 return endpointConfiguration;
             });
-        }
 
-        static async Task OnCriticalError(ICriticalErrorContext context, CancellationToken cancellationToken)
+        private static async Task OnCriticalError(ICriticalErrorContext context, CancellationToken cancellationToken)
         {
             // TODO: decide if stopping the endpoint and exiting the process is the best response to a critical error
             // https://docs.particular.net/nservicebus/hosting/critical-errors
@@ -63,7 +50,7 @@ namespace Reliable.Core.DI
             }
         }
 
-        static void FailFast(string message, Exception exception)
+        private static void FailFast(string message, Exception exception)
         {
             try
             {
@@ -76,6 +63,5 @@ namespace Reliable.Core.DI
                 Environment.FailFast(message, exception);
             }
         }
-
     }
 }
