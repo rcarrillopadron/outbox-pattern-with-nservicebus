@@ -1,4 +1,3 @@
-using BetterConsoleTables;
 using Reliable.Domain;
 
 namespace Reliable.Worker
@@ -19,10 +18,7 @@ namespace Reliable.Worker
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                var table = new Table(TableConfiguration.Markdown(), "Product Id", "Quantity");
-                _inventory.Select(item => table.AddRow(item.ProductId, item.Quantity));
-                _logger.LogTrace(table.ToString());
-
+                _logger.LogInformation(_inventory.ToString());
                 await Task.Delay(10000, cancellationToken);
             }
         }

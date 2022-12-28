@@ -10,12 +10,15 @@ namespace Reliable.Worker
     {
         public static void Main(string[] args)
         {
-            Console.BackgroundColor = ConsoleColor.DarkBlue;
-            Console.ForegroundColor = ConsoleColor.White;
             IHost host = Host.CreateDefaultBuilder(args)
                 .ConfigureServices(services =>
                 {
-                    services.AddSingleton<Inventory>();
+                    services.AddSingleton<Inventory>(_ =>
+                    {
+                        var inventory = new Inventory();
+                        inventory.GenerateRandomItems();
+                        return inventory;
+                    });
                     services.AddHostedService<Worker>();
                 })
                 .UseConsoleLifetime()

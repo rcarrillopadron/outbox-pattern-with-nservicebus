@@ -10,8 +10,6 @@ public class Program
 {
     public static void Main(string[] args)
     {
-        Console.BackgroundColor = ConsoleColor.Yellow;
-        Console.ForegroundColor = ConsoleColor.Black;
         var builder = WebApplication.CreateBuilder(args);
 
         builder.Host
