@@ -19,25 +19,33 @@ public class InventoryApi
 
     public void Register(WebApplication app)
     {
-        app.MapGet("/inventory/{productId}", Get).WithName("GetInventory");
+        app.MapGet("/inventory/{productId}", GetByProductId);
         app.MapGet("/inventory", GetAll);
-        app.MapPut("/inventory", Put).WithName("UpdateInventory");
+        app.MapPut("/inventory", Put);
     }
 
-    Task<IResult> Get(int productId)
+    private Task<IResult> GetByProductId(int productId)
     {
         _logger.LogInformation("Getting ProductId {0}", productId);
         var item = _inventory.GetItem(productId);
         if (item is not null)
+        {
+            _logger.LogInformation("{0}", item);
             return Task.FromResult(Results.Ok(item));
-        
+        }
+
         return Task.FromResult(Results.NotFound());
     }
 
     private Task<IResult> GetAll()
     {
-        _logger.LogInformation("Getting all products");
-        return Task.FromResult(Results.Ok(_inventory.ToList()));
+        using (_logger.BeginScope(nameof(GetAll)))
+        {
+            _logger.LogInformation("Getting all products");
+            var items = _inventory.ToList();
+            _logger.LogInformation("items: {@items}", items);
+            return Task.FromResult(Results.Ok(items));
+        }
     }
 
     private async Task<IResult> Put(ProductQuantity item, CancellationToken cancellationToken)

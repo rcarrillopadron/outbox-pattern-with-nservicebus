@@ -11,19 +11,18 @@ Log.Logger = new LoggerConfiguration()
     .CreateBootstrapLogger();
 
 await Host.CreateDefaultBuilder(args)
-    .ConfigureServices(services =>
-    {
-        services.AddSingleton<Inventory>();
-        services.AddHostedService<Worker>();
-    })
+    .AddInventoryEndPoint()
+    .UseConsoleLifetime()
+    .ConfigureLogging(logger => logger.AddConsole())
     .UseSerilog((context, services, configuration) => configuration
         .ReadFrom.Configuration(context.Configuration)
         .ReadFrom.Services(services)
         .Enrich.FromLogContext()
         .WriteTo.Console())
-    .ConfigureLogging(logger => logger.AddConsole())
-    .UseConsoleLifetime()
-    .AddInventoryEndPoint()
-    
+    .ConfigureServices(services =>
+    {
+        services.AddSingleton<Inventory>();
+        services.AddHostedService<Worker>();
+    })
     .Build()
     .RunAsync();
